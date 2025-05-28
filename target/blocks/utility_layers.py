@@ -2,26 +2,6 @@ import torch
 from typing import Literal
 
 
-#######################
-# FLATTEN INPUT LAYER #
-#######################
-
-
-class Flatten(torch.nn.Module):
-    """
-    A module that flattens the input tensor except for the batch dimension.
-
-    This layer reshapes the input tensor of shape (N, *) to (N, -1), where
-    N is the batch size and * represents any number of additional dimensions.
-
-    Returns:
-        torch.Tensor: A 2D tensor of shape (batch_size, flattened_features).
-    """
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x.view(x.size(0), -1)
-    
-
 #########################
 # NORMALIZE INPUT LAYER #
 #########################

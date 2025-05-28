@@ -5,14 +5,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Literal 
 
 import torch
-import torch.nn.functional as F
 from torch.nn import (Linear, Conv2d, 
-                    SiLU, 
-                      AdaptiveAvgPool2d, 
+                      SiLU, 
+                      Flatten, AdaptiveAvgPool2d, 
                       Sequential, Module) 
 
 from blocks.bottleneck import Bottleneck
-from blocks.utility_layers import Flatten, ConvLayerNorm
+from blocks.utility_layers import ConvLayerNorm
 
 
 class ResidualStemBlock(Module):
