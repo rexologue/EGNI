@@ -68,10 +68,9 @@ class Normalize(torch.nn.Module):
 #####################################
 
 
-class ConvLayerNorm(torch.nn.Module):
+class ConvLayerNorm(torch.nn.GroupNorm):
     def __init__(self, channels):
-        super(ConvLayerNorm, self).__init__()
-        self.layer = torch.nn.GroupNorm(1, channels)
+        super(ConvLayerNorm, self).__init__(1, channels)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -83,4 +82,4 @@ class ConvLayerNorm(torch.nn.Module):
         Returns:
             torch.Tensor: A tensor of the same shape as the input tensor.
         """
-        return self.layer(x)
+        return super().forward(x)
