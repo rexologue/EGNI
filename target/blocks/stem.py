@@ -1,10 +1,10 @@
 import torch
 from torch import nn
 
-    
+
 class ResNetStemBlock(nn.Module):
     def __init__(
-        self, 
+        self,
         in_channels: int,
         out_channels: int,
         stem_channels: int = 32
@@ -20,7 +20,7 @@ class ResNetStemBlock(nn.Module):
             out_channels: The number of otput channels.
             stem_channels: The number of channels inside block.
         """
-        
+
         super(ResNetStemBlock, self).__init__()
 
         self.stem = nn.Sequential(
@@ -39,7 +39,7 @@ class ResNetStemBlock(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
 
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward propagation."""
         return self.stem(x)

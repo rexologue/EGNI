@@ -24,7 +24,7 @@ def load_model(
     model_name: Literal["resnet50", "resnet101", "resnet152", "efficientnet_v2_s", "efficientnet_v2_m", "all"],
     load_in_mem: bool = True
 ) -> torch.nn.Module | None:
-    
+
     # Weights loading
     if model_name == "all":
         for model_name, url in URLS_DICT.items():
@@ -33,7 +33,7 @@ def load_model(
     else:
         if model_name not in URLS_DICT.keys():
             raise ValueError(f"Unknown model {model_name}")
-        
+
         state_dict = load_state_dict_from_url(URLS_DICT[model_name], model_dir=MODEL_DIR, file_name=(model_name + ".pth"))
 
         if load_in_mem:
@@ -41,6 +41,3 @@ def load_model(
             model.load_state_dict(state_dict)
 
             return model
-        
-
-    

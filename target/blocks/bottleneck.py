@@ -1,5 +1,5 @@
 import torch
-from torch import nn 
+from torch import nn
 
 
 class Bottleneck(nn.Module):
@@ -32,13 +32,13 @@ class Bottleneck(nn.Module):
     """
 
     def __init__(
-        self, 
-        in_channels: int, 
-        out_channels: int, 
+        self,
+        in_channels: int,
+        out_channels: int,
         downsample: bool = True,
         after_stem: bool = False
     ):
-        
+
         """
         Args:
             in_channels: The number of input channels.
@@ -59,10 +59,10 @@ class Bottleneck(nn.Module):
                 nn.AvgPool2d(kernel_size=2, stride=2),
                 nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False),
             )
-            
+
         elif in_channels != out_channels:
             self.shortcut_path = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
-            
+
         else:
             self.shortcut_path = nn.Identity()
 
@@ -72,7 +72,7 @@ class Bottleneck(nn.Module):
 
         if after_stem:
             pre_layers = []
-        
+
         else:
             pre_layers = [
                 nn.BatchNorm2d(in_channels),

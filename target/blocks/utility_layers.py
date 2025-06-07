@@ -5,12 +5,12 @@ from typing import Literal
 #########################
 # NORMALIZE INPUT LAYER #
 #########################
-    
+
 
 class Normalize(torch.nn.Module):
     def __init__(
-            self, 
-            norm_type: Literal['l1', 'l2'], 
+            self,
+            norm_type: Literal['l1', 'l2'],
             axis=1
         ):
         """
@@ -30,7 +30,7 @@ class Normalize(torch.nn.Module):
 
         self.norm = 1 if norm_type == 'l1' else 2
         self.axis = axis
-        
+
 
     def forward(self, x: torch.Tensor):
         # Compute norm
@@ -41,7 +41,7 @@ class Normalize(torch.nn.Module):
 
         # Normalize
         return x / norm
-    
+
 
 #####################################
 # CONVOLUTIONAL LAYER NORMALIZATION #
