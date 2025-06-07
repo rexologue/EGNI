@@ -1,0 +1,14 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Neptune files
+.neptune/
+
+# Datasets specific data
+*.parquet
+
+# Model weights
+*.pth
+
+# Logs
+logs/

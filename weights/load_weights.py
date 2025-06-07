@@ -34,7 +34,7 @@ def load_model(
         if model_name not in URLS_DICT.keys():
             raise ValueError(f"Unknown model {model_name}")
         
-        state_dict = load_state_dict_from_url(URLS_DICT[model_name], model_dir=MODEL_DIR, file_name=model_name)
+        state_dict = load_state_dict_from_url(URLS_DICT[model_name], model_dir=MODEL_DIR, file_name=(model_name + ".pth"))
 
         if load_in_mem:
             model = getattr(torchvision.models, model_name)()

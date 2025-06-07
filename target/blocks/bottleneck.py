@@ -1,77 +1,115 @@
-from torch.nn import (Conv2d, AvgPool2d,
-                      SiLU, 
-                      Sequential, Module) 
+import torch
+from torch import nn 
 
-from .utility_layers import ConvLayerNorm
 
-class Bottleneck(Module):
-    def __init__(self, 
-                 in_channels, 
-                 out_channels, 
-                 downsample=True):
-        """
-        Pre-activation ResNet Bottleneck Block (ResNet v2 style).
+class Bottleneck(nn.Module):
+    """
+    A 'bottleneck' block used as a building block for ResNet-50/101/152
 
-        Components:
+    This block is usually repeated several times within each of the model stages.
+
+    At each repeat the block has two paths for the input:
+        - Path A: BN -> ReLU -> Conv -> BN -> ReLU -> Conv -> BN -> ReLU -> Conv (skipping first BN and ReLU when
+            there is a stem before)
+                  Three convolutions defined as follows:
+                      1. The same depth for the first two convolutions and depth x 4 for the third convolution
+                      2. (1, 1) kernel size for the first and the third convolutions and (3, 3) - for the second
+                      3. Padding = 1 only for the second convolution and 0 for all others
+                      4. For the first and the third convolutions: stride = 1 always
+                      5. For the second convolution: stride = 2 only at first repeat at all stages except for the first
+                            one and stride = 1 otherwise
+
+        - Path B: Identity or Conv or (AvgPool -> Conv)
+                  A shortcut connection is defined as follows:
+                      1. 'Downsampling' layer that consists of:
+                            - Avg Pool layer with kernel = (2, 2) and stride = 2 and convolution with the same depth
+                                    as for the last convolution from path A, kernel = (1, 1) and stride = 1
+                            - both only at first repeat at all stages except for the first one.
+                            Note: shortcut convolutions in this block are not followed by BN!
+                      2. Identity layer (nn.Identity) at all other repeats
+
+    Inputs are passed through the both paths, then results are summed up.
+    """
+
+    def __init__(
+        self, 
+        in_channels: int, 
+        out_channels: int, 
+        downsample: bool = True,
+        after_stem: bool = False
+    ):
         
-        1. Shortcut Path:
-        - If downsample=True: applies spatial downsampling using AvgPool2d + 1x1 convolution (ResNet-D style).
-        - If in_channels != out_channels: uses a 1x1 convolution to align the channel dimensions.
-        - This path allows identity mappings, enabling better gradient flow.
-
-        2. Residual Path:
-        - Bottleneck architecture: 1x1 → 3x3 → 1x1 convolutions.
-        - Pre-activation order: BatchNorm → SiLU → Conv (before each convolution).
-
+        """
         Args:
-            in_channels (int): Number of input channels.
-            out_channels (int): Number of output channels.
-            downsample (bool): Whether to halve the spatial resolution (default: True).
+            in_channels: The number of input channels.
+            out_channels: The number of output channels.
+            downsample: If to use downsampling layer.
+            after_stem: If this block follows the stem block.
         """
         super(Bottleneck, self).__init__()
-        
+
         #################
         # Shortcut Path #
         #################
-        self.shortcut_layer = Sequential()
 
-        # Downsample with AvgPool if needed
-        if downsample:
-            self.shortcut_layer.add_module("pool", AvgPool2d(kernel_size=2, stride=2))
-
-        # Match channel dimensions if needed
-        if in_channels != out_channels:
-            self.shortcut_layer.add_module("conv", Conv2d(
-                in_channels, out_channels, 
-                kernel_size=1, stride=1, 
-                bias=False
-            ))
-
-        #################
-        # Residual Path #
-        #################
-        bottleneck_channels = out_channels // 4
         stride = 2 if downsample else 1
 
-        self.res_layer = Sequential(
-            # Phase 1: Reduce channels
-            ConvLayerNorm(in_channels),
-            SiLU(inplace=True),
-            Conv2d(in_channels, bottleneck_channels, kernel_size=1, stride=1, bias=False),
+        if downsample:
+            self.shortcut_path = nn.Sequential(
+                nn.AvgPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False),
+            )
             
-            # Phase 2: Spatial processing
-            ConvLayerNorm(bottleneck_channels),
-            SiLU(inplace=True),
-            Conv2d(bottleneck_channels, bottleneck_channels, 
-                   kernel_size=3, stride=stride, padding=1, bias=False),
+        elif in_channels != out_channels:
+            self.shortcut_path = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
             
-            # Phase 3: Restore channels
-            ConvLayerNorm(bottleneck_channels),
-            SiLU(inplace=True),
-            Conv2d(bottleneck_channels, out_channels, kernel_size=1, stride=1, bias=False),
-            ConvLayerNorm(out_channels)
+        else:
+            self.shortcut_path = nn.Identity()
+
+        #############
+        # Main Path #
+        #############
+
+        if after_stem:
+            pre_layers = []
+        
+        else:
+            pre_layers = [
+                nn.BatchNorm2d(in_channels),
+                nn.ReLU(inplace=True)
+            ]
+
+        bottleneck_channels = out_channels // 4
+
+        self.main_path = nn.Sequential(
+            # Phase 1: "Bottleneck" channels
+            *pre_layers,
+            nn.Conv2d(in_channels, bottleneck_channels, kernel_size=1, stride=1, padding=0, bias=False),
+
+            # Phase 2: Downsample if needed
+            nn.BatchNorm2d(bottleneck_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(bottleneck_channels, bottleneck_channels, kernel_size=3, stride=stride, padding=1, bias=False),
+
+            # Phase 3: Unsqueeze channels
+            nn.BatchNorm2d(bottleneck_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(bottleneck_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
         )
 
-    def forward(self, x):
-        """Forward pass: F(x) + Shortcut(x)"""
-        return self.res_layer(x) + self.shortcut_layer(x)
+        self._set_last_bn()
+
+
+    def _set_last_bn(self) -> None:
+        last_bn = None
+
+        for m in self.main_path.modules():
+            if isinstance(m, nn.BatchNorm2d):
+                last_bn = m
+
+        last_bn.is_last = True
+
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward propagation."""
+        return self.shortcut_path(x) + self.main_path(x)
