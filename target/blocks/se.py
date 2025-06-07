@@ -49,7 +49,7 @@ class SEModule(Module):
         # Activations
         self.relu = SiLU(inplace=True)
         self.sigmoid = Sigmoid()
-        
+
 
     def forward(self, x: torch.Tensor):
         # Squeeze

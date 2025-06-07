@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import Literal 
+from typing import Literal
 
 import torch
 from torch import nn
@@ -19,10 +19,10 @@ class ResNet(nn.Module):
     """
 
     def __init__(
-        self, 
+        self,
         blocks_amount: Literal[50, 101, 152]
     ):
-        
+
         super(ResNet, self).__init__()
 
         if blocks_amount not in [50, 101, 152]:
@@ -39,14 +39,14 @@ class ResNet(nn.Module):
     def _make_stage(
         self,
         stage_idx: int,
-        num_blocks: int, 
-        in_channels: int, 
-        out_channels: int, 
+        num_blocks: int,
+        in_channels: int,
+        out_channels: int,
     ):
 
         """
         Creates a stage of the network from several blocks.
-        
+
         Args:
             stage_idx (int); Current stage index
             num_blocks (int): Number of blocks in the stage
@@ -54,7 +54,7 @@ class ResNet(nn.Module):
             out_channels (int): Number of output channels for all blocks
         """
         self.layers.add_module(
-            f"stage_{stage_idx}_block_0", 
+            f"stage_{stage_idx}_block_0",
             Bottleneck(
                 in_channels=in_channels,
                 out_channels=out_channels,
@@ -73,7 +73,7 @@ class ResNet(nn.Module):
                     downsample=False
                 )
             )
-    
+
 
     def _init_layers(self) -> None:
         """
@@ -118,8 +118,8 @@ class ResNet(nn.Module):
         """
         if isinstance(module, (nn.Conv2d, nn.Linear)):
             nn.init.kaiming_normal_(
-                module.weight, 
-                mode='fan_in', 
+                module.weight,
+                mode='fan_in',
                 nonlinearity='relu'
             )
 
@@ -151,7 +151,7 @@ class ResNet(nn.Module):
         channels_per_stage = [64, 256, 512, 1024, 2048]
 
         return blocks_per_stage, channels_per_stage
-    
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward propagation"""

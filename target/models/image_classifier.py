@@ -24,11 +24,11 @@ class ImageClassifier(nn.Module):
 
         else:
             raise ValueError(f"Unsupported bacbone type: {backbone}")
-        
+
         self.classes_num = classes_num
         self.fc = nn.Linear(self.backbone.output_dim, classes_num)
 
-    
+
     def load_backbone_state_dict(self, state_dict: dict):
         self.backbone.load_state_dict(state_dict)
 
